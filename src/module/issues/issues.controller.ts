@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import { issueService } from "./issues.service";
-import type { Iuser } from "../user/user.interface";
 import { USER_ROLE } from "../../types";
 import { pool } from "../../DB";
 import type { Iissues } from "./issues.interface";
@@ -92,37 +91,49 @@ const deleteIssue = async (req: Request, res: Response) => {
   }
 };
 
-const canUpdateIssue = (issue: Iissues, user: Iuser) : boolean => {
-  if(user.role === USER_ROLE.maintainer){
+const canUpdateIssue = (
+  issue: Iissues, 
+  user: { id: number; name: string; email: string; role: string }
+): boolean => {
+  if (user.role === USER_ROLE.maintainer) {
     return true;
   }
-      return (issue.reporter_id === user.id && issue.status === "open");
-  }
+  // Convert reporter_id to a number for safe comparison, since PG returns it as a number
+  return (Number(issue.reporter_id) === user.id && issue.status === "open");
+};
+
 const updateIssue = async (req: Request, res: Response) => {
 
   try {
     const id = req.params.id;
     const user = req.user;
 
+    // Check if user is logged in
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized access!",
+      });
+    }
 
     const issueResult = await pool.query(
           `SELECT * FROM issues WHERE id = $1`, [id]
       );
   
-      if (issueResult.rows.length === 0) return res.status(404).json({
+      if (issueResult.rows.length === 0) {
+      return res.status(404).json({
         success: false,
         message: "Issue not found!",
-      });;
-  
+      });
+    }
       const issue = issueResult.rows[0];
 
-
-
-    if(!canUpdateIssue(issue, user)){
+    // user is now guaranteed to be defined and matched with the correct type
+    if (!canUpdateIssue(issue, user)) {
       return res.status(403).json({
         success: false,
-        messege: "access denied.",
-      })
+        message: "access denied.", // fixed typo "messege" if desired
+      });
     }
 
     const result = await issueService.updateIssueFromDB(
