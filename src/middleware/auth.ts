@@ -19,9 +19,10 @@ const auth = (...roles: ROLES[]) => {
       }
 
       const decoded = jwt.verify(
-        token as string,
-        config.accessToken as string,
-      ) as JwtPayload;
+    token as string,
+    config.accessToken as string,
+) as { id: number; name: string; email: string; role: string };
+
       const userData = await pool.query(
         `
         SELECT * FROM users WHERE email = $1
@@ -45,7 +46,10 @@ const auth = (...roles: ROLES[]) => {
         });
       }
 
-       req.user = { id: user.id, ...decoded }; // req: { user: {}}
+       req.user = { ...decoded, id: user.id };
+
+       req.user = { ...decoded, id: user.id };
+console.log("req.user set to:", req.user);
 
       next();
     } catch (error) {

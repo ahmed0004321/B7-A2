@@ -33,4 +33,6 @@ app.use('/api/issue', issuesRoute);
 
 app.use('/api/issue', issuesRoute);
 
+app.use('/api/issue', issuesRoute);
+
 export default app;

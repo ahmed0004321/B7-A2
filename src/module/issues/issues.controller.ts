@@ -74,9 +74,37 @@ const deleteIssue = async (req: Request, res: Response) => {
   }
 };
 
+const updateIssue = async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id;
+        const user = req.user;
+
+        const result = await issueService.updateIssueFromDB(id as string, req.body, user);
+
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: "Issue not found!",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Issue updated successfully",
+            data: result
+        });
+    } catch (error: any) {
+        res.status(403).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 export const issueController = {
   createIssue,
   getAllIssue,
   getSingleIssue,
   deleteIssue,
+  updateIssue
 };
