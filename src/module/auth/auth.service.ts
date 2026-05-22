@@ -32,7 +32,7 @@ const logingUserIntpDB = async (payload: {email: string, password: string}) => {
         }
 
         //3: generate accessToken:
-        const token = jwt.sign(jwtPayload, config.accessToken as string, {expiresIn: "1d"});
+        const token = jwt.sign(jwtPayload, config.accessToken as string, {expiresIn: "10d"});
         delete user.password;
         return {token, user};
         

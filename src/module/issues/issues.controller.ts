@@ -16,12 +16,26 @@ const createIssue = async (req: Request, res: Response) => {
 };
 
 const getAllIssue = async (req: Request, res: Response) => {
-  const result = await issueService.getAllUserFromDB();
-  res.status(200).json({
-    success: true,
-    message: "Issues fetched successfully",
-    data: result,
-  });
+  try {
+    const { sort, type, status } = req.query;
+
+    const result = await issueService.getAllIssueFromDB(
+      sort as string,
+      type as string,
+      status as string,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Issues fetched successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 const getSingleIssue = async (req: Request, res: Response) => {
@@ -75,30 +89,34 @@ const deleteIssue = async (req: Request, res: Response) => {
 };
 
 const updateIssue = async (req: Request, res: Response) => {
-    try {
-        const id = req.params.id;
-        const user = req.user;
+  try {
+    const id = req.params.id;
+    const user = req.user;
 
-        const result = await issueService.updateIssueFromDB(id as string, req.body, user);
+    const result = await issueService.updateIssueFromDB(
+      id as string,
+      req.body,
+      user,
+    );
 
-        if (!result) {
-            return res.status(404).json({
-                success: false,
-                message: "Issue not found!",
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Issue updated successfully",
-            data: result
-        });
-    } catch (error: any) {
-        res.status(403).json({
-            success: false,
-            message: error.message,
-        });
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: "Issue not found!",
+      });
     }
+
+    res.status(200).json({
+      success: true,
+      message: "Issue updated successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    res.status(403).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 export const issueController = {
@@ -106,5 +124,5 @@ export const issueController = {
   getAllIssue,
   getSingleIssue,
   deleteIssue,
-  updateIssue
+  updateIssue,
 };

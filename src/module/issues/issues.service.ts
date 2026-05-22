@@ -17,22 +17,37 @@ const insertIssueIntoDB = async (payload: Iissues, reporter_id: number) => {
   return result;
 };
 
-const getAllUserFromDB = async () => {
-  const issues = await pool.query(`SELECT * FROM issues`);
+const getAllIssueFromDB = async (sort?: string, type?: string, status?: string) => {
+    
+    //1: get all issues
+    let sqlQuery = `SELECT * FROM issues WHERE 1=1`;
 
-  const reporterIds = [...new Set(issues.rows.map((i) => i.reporter_id))];
+    if (type) sqlQuery += ` AND type = '${type}'`;
+    if (status) sqlQuery += ` AND status = '${status}'`;
+    if (sort === 'oldest') {
+        sqlQuery += ` ORDER BY created_at ASC`;
+    } else {
+        sqlQuery += ` ORDER BY created_at DESC`;
+    }
 
-  const users = await pool.query(
-    `SELECT id, name, role FROM users WHERE id = ANY($1)`,
-    [reporterIds],
-  );
+    const issues = await pool.query(sqlQuery);
 
-  const userMap = Object.fromEntries(users.rows.map((u) => [u.id, u]));
+    //2: get all reporters
+    const result = [];
 
-  return issues.rows.map((issue) => ({
-    ...issue,
-    reporter: userMap[issue.reporter_id],
-  }));
+    for (const issue of issues.rows) {
+        const reporter = await pool.query(
+            `SELECT id, name, role FROM users WHERE id = $1`,
+            [issue.reporter_id]
+        );
+
+        result.push({
+            ...issue,
+            reporter: reporter.rows[0]
+        });
+    }
+
+    return result;
 };
 
 const getSingleIssueFromDB = async (id: string) => {
@@ -92,9 +107,9 @@ const updateIssueFromDB = async (
 
     const issue = issueResult.rows[0];
 
-    console.log("issue.reporter_id:", issue.reporter_id, typeof issue.reporter_id);
-console.log("user.id:", user.id, typeof user.id);
-console.log("match:", issue.reporter_id === user.id);
+//     console.log("issue.reporter_id:", issue.reporter_id, typeof issue.reporter_id);
+// console.log("user.id:", user.id, typeof user.id);
+// console.log("match:", issue.reporter_id === user.id);
 
     if (user.role === USER_ROLE.contributor) {
         if (issue.reporter_id !== user.id) {
@@ -123,7 +138,7 @@ console.log("match:", issue.reporter_id === user.id);
 
 export const issueService = {
   insertIssueIntoDB,
-  getAllUserFromDB,
+  getAllIssueFromDB,
   getSingleIssueFromDB,
   deleteIssueFromDB,
   updateIssueFromDB
