@@ -6,7 +6,7 @@ const signUpNewUser = async (req: Request, res: Response) => {
     const result = await userService.createUserIntoDB(req.body);
     res.status(201).json({
         success: true,
-      message: "User signup successfully",
+      message: "User registered successfully",
       data: result.rows[0],
     });
   } catch (error: any) {

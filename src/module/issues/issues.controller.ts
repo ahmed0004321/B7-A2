@@ -5,17 +5,22 @@ import { pool } from "../../DB";
 import type { Iissues } from "./issues.interface";
 
 const createIssue = async (req: Request, res: Response) => {
-  console.log("Headers:", req.headers);
-  console.log("Body:", req.body);
+  try {
+    const id = Number(req.user?.id);
 
-  const id = Number(req.user?.id);
-
-  const result = await issueService.insertIssueIntoDB(req.body, id);
-  res.status(201).json({
-    success: true,
-    messege: "Issue created successfully",
-    data: result.rows[0],
-  });
+    const result = await issueService.insertIssueIntoDB(req.body, id);
+    
+    res.status(201).json({
+      success: true,
+      message: "Issue created successfully",
+      data: result.rows[0],
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 const getAllIssue = async (req: Request, res: Response) => {
@@ -105,8 +110,8 @@ const canUpdateIssue = (
 const updateIssue = async (req: Request, res: Response) => {
 
   try {
-    const id = req.params.id;
-    const user = req.user;
+    const id = req.params.id; // issue ID
+    const user = req.user; // user decoded from jwt token
 
     // Check if user is logged in
     if (!user) {
