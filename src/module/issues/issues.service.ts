@@ -94,33 +94,13 @@ const updateIssueFromDB = async (
     payload: Partial<Iissues>, 
     user: (JwtPayload & { id: number; role: string }) | undefined 
 ) => {
-
-  // console.log("logged in id=",id, "update details=",payload, "middleware id",user);
-  
     if (!user) throw new Error('Unauthorized');
 
-    const issueResult = await pool.query(
-        `SELECT * FROM issues WHERE id = $1`, [id]
-    );
+    const { title, description, type, status } = payload;
 
-    if (issueResult.rows.length === 0) return null;
-
-    const issue = issueResult.rows[0];
-
-//     console.log("issue.reporter_id:", issue.reporter_id, typeof issue.reporter_id);
-// console.log("user.id:", user.id, typeof user.id);
-// console.log("match:", issue.reporter_id === user.id);
-
-    if (user.role === USER_ROLE.contributor) {
-        if (issue.reporter_id !== user.id) {
-            throw new Error('You can only update your own issues');
-        }
-        if (issue.status !== 'open') {
-            throw new Error('You can only update issues with open status');
-        }
-    }
-
-    const { title, description, type } = payload;
+    // contributor: can only update title, description, type (ignore status)
+    // maintainer: can update title, description, type AND status
+    const newStatus = user.role === USER_ROLE.maintainer ? status : undefined;
 
     const result = await pool.query(`
         UPDATE issues 
@@ -128,10 +108,11 @@ const updateIssueFromDB = async (
             title = COALESCE($1, title),
             description = COALESCE($2, description),
             type = COALESCE($3, type),
+            status = COALESCE($4, status),
             updated_at = NOW()
-        WHERE id = $4
+        WHERE id = $5
         RETURNING *
-    `, [title, description, type, id]);
+    `, [title, description, type, newStatus, id]);
 
     return result.rows[0];
 };

@@ -1,5 +1,9 @@
 import type { Request, Response } from "express";
 import { issueService } from "./issues.service";
+import type { Iuser } from "../user/user.interface";
+import { USER_ROLE } from "../../types";
+import { pool } from "../../DB";
+import type { Iissues } from "./issues.interface";
 
 const createIssue = async (req: Request, res: Response) => {
   console.log("Headers:", req.headers);
@@ -88,21 +92,49 @@ const deleteIssue = async (req: Request, res: Response) => {
   }
 };
 
+const canUpdateIssue = (issue: Iissues, user: Iuser) : boolean => {
+  if(user.role === USER_ROLE.maintainer){
+    return true;
+  }
+      return (issue.reporter_id === user.id && issue.status === "open");
+  }
 const updateIssue = async (req: Request, res: Response) => {
+
   try {
     const id = req.params.id;
     const user = req.user;
 
+
+    const issueResult = await pool.query(
+          `SELECT * FROM issues WHERE id = $1`, [id]
+      );
+  
+      if (issueResult.rows.length === 0) return res.status(404).json({
+        success: false,
+        message: "Issue not found!",
+      });;
+  
+      const issue = issueResult.rows[0];
+
+
+
+    if(!canUpdateIssue(issue, user)){
+      return res.status(403).json({
+        success: false,
+        messege: "access denied.",
+      })
+    }
+
     const result = await issueService.updateIssueFromDB(
       id as string,
       req.body,
-      user,
+      user
     );
 
     if (!result) {
-      return res.status(404).json({
+      return res.status(500).json({
         success: false,
-        message: "Issue not found!",
+        message: "Something went wrong!",
       });
     }
 
@@ -112,12 +144,13 @@ const updateIssue = async (req: Request, res: Response) => {
       data: result,
     });
   } catch (error: any) {
-    res.status(403).json({
+    res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
+
 
 export const issueController = {
   createIssue,

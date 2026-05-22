@@ -47,8 +47,6 @@ const auth = (...roles: ROLES[]) => {
       }
 
        req.user = { ...decoded, id: user.id };
-
-       req.user = { ...decoded, id: user.id };
 console.log("req.user set to:", req.user);
 
       next();
